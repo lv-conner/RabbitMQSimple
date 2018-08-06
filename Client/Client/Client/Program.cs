@@ -50,6 +50,7 @@ namespace Client
             {
                 var consumer = new EventingBasicConsumer(channel);
                 consumer.Received += Consumer_Received;
+                //设置不自动发送ack，防止消费者丢失消息。
                 channel.BasicConsume("DefaultQueue", false, consumer);
                 Console.ReadKey();
             }

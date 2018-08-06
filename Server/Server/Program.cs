@@ -6,7 +6,7 @@ using System.Text;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
-
+using RabbitMQ.Client.Events;
 namespace Server
 {
     class Program
@@ -20,11 +20,11 @@ namespace Server
         };
         static void Main(string[] args)
         {
-            //DefaultExchange();
+            DefaultExchange();
             //DirectExchange();
             //FanoutExchange();
             //TopicExchange();
-            HeaderExchange();
+            //HeaderExchange();
         }
 
         /// <summary>
@@ -35,10 +35,22 @@ namespace Server
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
+                //开启Confirm模式,防止生产者丢失数据
+                channel.ConfirmSelect();
+                channel.BasicAcks += Channel_BasicAcks;
                 channel.QueueDeclare("DefaultQueue", true, false, false, null);
-                channel.BasicPublish("", "DefaultQueue", null, Encoding.UTF8.GetBytes("Default Queue Message"));
+                //设置持久化模式为persistent防止消息队列丢失消息。
+                var prop = channel.CreateBasicProperties();
+                prop.DeliveryMode = 2;
+                channel.BasicPublish("", "DefaultQueue", prop, Encoding.UTF8.GetBytes("Default Queue Message"));
                 Console.WriteLine("Default Queue Message publish complete");
             }
+        }
+
+        private static void Channel_BasicAcks(object sender, BasicAckEventArgs e)
+        {
+            Console.WriteLine(sender.GetType().FullName);
+            Console.WriteLine("publish Complete");
         }
 
         /// <summary>
