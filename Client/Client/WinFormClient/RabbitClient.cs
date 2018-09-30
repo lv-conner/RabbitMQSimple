@@ -60,7 +60,7 @@ namespace WinFormClient
             var msg = "Recevied:\t" + Encoding.UTF8.GetString(e.Body);
             m_SyncContext.Post(s =>
             {
-                this.textBox1.Text += DateTime.Now + ":" + (string)s;
+                this.textBox1.Text += DateTime.Now + ":" + (string)s + "\r\n";
             }, msg);
         }
 
