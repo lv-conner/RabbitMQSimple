@@ -22,12 +22,72 @@ namespace Server
         };
         static void Main(string[] args)
         {
+            RelativeApi();
             DefaultExchange();
             //DirectExchange();
             //FanoutExchange();
             //TopicExchange();
             //HeaderExchange();
             Console.ReadKey();
+        }
+        static void RelativeApi()
+        {
+            IConnectionFactory factory = new ConnectionFactory()
+            {
+                HostName = "localhost",//rabbitmq主机名称
+                Port = 5672,//端口位置
+                UserName = "admin",//登陆用户名
+                Password = "admin"//密码
+            };
+            using (var connection = factory.CreateConnection())
+            using (var channel = connection.CreateModel())
+            {
+                connection.Abort();//中断连接
+                //connection.ChannelMax;最大信道数量。默认为2047；
+                //connection.ClientProvidedName;提供给消息代理的可读的客户端名称。
+                channel.Abort();//关闭会话。
+                channel.ConfirmSelect();//启用发布确认。
+                channel.WaitForConfirms();
+                //时间
+                channel.BasicAcks += PublishSuccess;//发布成功回调;
+                channel.BasicNacks += PublishError;//发布消息失败时触发;
+                channel.BasicRecoverOk += BrokerRecover;//消息代理恢复时触发；
+                channel.BasicReturn += ReturnCommand;//当然会一个basic.return命令时触发。
+                channel.CallbackException += ExceptionCall;//当发生异常时触发。
+                channel.ModelShutdown += ModalShutDown;//通道关闭时。
+
+            }
+
+        }
+
+        private static void ModalShutDown(object sender, ShutdownEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void ExceptionCall(object sender, CallbackExceptionEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void ReturnCommand(object sender, BasicReturnEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void BrokerRecover(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void PublishError(object sender, BasicNackEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void PublishSuccess(object sender, BasicAckEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
