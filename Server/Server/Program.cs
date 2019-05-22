@@ -22,6 +22,28 @@ namespace Server
         };
         static void Main(string[] args)
         {
+            if (args.Length == 0)
+            {
+                return;
+            }
+            switch (args[0])
+            {
+                case "default":
+                    DefaultExchange();
+                    break;
+                case "fanout":
+                    FanoutExchange();
+                    break;
+                case "topic":
+                    TopicExchange();
+                    break;
+                case "header":
+                    HeaderExchange();
+                    break;
+                default:
+                    Console.WriteLine("no select exchange");
+                    break;
+            }
             RelativeApi();
             DefaultExchange();
             //DirectExchange();
