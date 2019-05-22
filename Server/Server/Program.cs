@@ -7,6 +7,8 @@ using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using RabbitMQ.Client.Events;
+using System.Threading;
+
 namespace Server
 {
     class Program
@@ -20,34 +22,72 @@ namespace Server
         };
         static void Main(string[] args)
         {
-            if(args.Length == 0 )
-            {
-                return;
-            }
-            switch (args[0])
-            {
-                case "default":
-                    DefaultExchange();
-                    break;
-                case "fanout":
-                    FanoutExchange();
-                    break;
-                case "topic":
-                    TopicExchange();
-                    break;
-                case "header":
-                    HeaderExchange();
-                    break;
-                default:
-                    Console.WriteLine("no select exchange");
-                    break;
-            }
+            RelativeApi();
+            DefaultExchange();
             //DirectExchange();
             //FanoutExchange();
             //TopicExchange();
             //HeaderExchange();
-            Console.WriteLine("Press any key to exit");
             Console.ReadKey();
+        }
+        static void RelativeApi()
+        {
+            IConnectionFactory factory = new ConnectionFactory()
+            {
+                HostName = "localhost",//rabbitmq主机名称
+                Port = 5672,//端口位置
+                UserName = "admin",//登陆用户名
+                Password = "admin"//密码
+            };
+            using (var connection = factory.CreateConnection())
+            using (var channel = connection.CreateModel())
+            {
+                connection.Abort();//中断连接
+                //connection.ChannelMax;最大信道数量。默认为2047；
+                //connection.ClientProvidedName;提供给消息代理的可读的客户端名称。
+                channel.Abort();//关闭会话。
+                channel.ConfirmSelect();//启用发布确认。
+                channel.WaitForConfirms();
+                //时间
+                channel.BasicAcks += PublishSuccess;//发布成功回调;
+                channel.BasicNacks += PublishError;//发布消息失败时触发;
+                channel.BasicRecoverOk += BrokerRecover;//消息代理恢复时触发；
+                channel.BasicReturn += ReturnCommand;//当然会一个basic.return命令时触发。
+                channel.CallbackException += ExceptionCall;//当发生异常时触发。
+                channel.ModelShutdown += ModalShutDown;//通道关闭时。
+
+            }
+
+        }
+
+        private static void ModalShutDown(object sender, ShutdownEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void ExceptionCall(object sender, CallbackExceptionEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void ReturnCommand(object sender, BasicReturnEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void BrokerRecover(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void PublishError(object sender, BasicNackEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void PublishSuccess(object sender, BasicAckEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -60,23 +100,38 @@ namespace Server
             {
                 //开启Confirm模式,防止生产者丢失数据
                 channel.ConfirmSelect();
+                //当消息队列收到消息时触发
                 channel.BasicAcks += Channel_BasicAcks;
+                //当消息队列接收消息错误时触发
+                channel.BasicNacks += Channel_BasicNacks;
                 channel.QueueDeclare("DefaultQueue", true, false, false, null);
+                //当设置mandatory设置为true时，交换机根据路由键找不到对应的队列时，将强制将消息返回到生产者，此时可以。
+                channel.BasicReturn += Channel_BasicReturn;
                 //设置持久化模式为persistent防止消息队列丢失消息。
                 var prop = channel.CreateBasicProperties();
                 prop.DeliveryMode = 2;
                 channel.BasicPublish("", "DefaultQueue", prop, Encoding.UTF8.GetBytes("Default Queue Message"));
                 Console.WriteLine("Default Queue Message publish complete");
-                Console.ReadKey();
+                channel.BasicPublish("", "DefaultQueue", prop, Encoding.UTF8.GetBytes("Another default queue message"));
+                Console.WriteLine("Another default queue message publish complete");
+                Thread.Sleep(3000);
+                Console.ReadLine();
             }
+        }
+
+        private static void Channel_BasicReturn(object sender, BasicReturnEventArgs e)
+        {
+            //e.Body;为发送到队列失败的消息。
+        }
+
+        private static void Channel_BasicNacks(object sender, BasicNackEventArgs e)
+        {
+            Console.WriteLine("消息发送失败。消息Id为:\t" + e.DeliveryTag);
         }
 
         private static void Channel_BasicAcks(object sender, BasicAckEventArgs e)
         {
-            Console.WriteLine(sender.GetType().FullName);
-            //DeliverTag在channel中唯一，第一个发布的消息DeliveryTag为1，每发布一个消息+1;
-            Console.WriteLine(e.DeliveryTag);
-            Console.WriteLine(e.Multiple);
+            Console.WriteLine("消息发送成功。消息Id为：\t" + e.DeliveryTag);
             Console.WriteLine("publish Complete");
         }
 
