@@ -20,11 +20,34 @@ namespace Server
         };
         static void Main(string[] args)
         {
-            DefaultExchange();
+            if(args.Length == 0 )
+            {
+                return;
+            }
+            switch (args[0])
+            {
+                case "default":
+                    DefaultExchange();
+                    break;
+                case "fanout":
+                    FanoutExchange();
+                    break;
+                case "topic":
+                    TopicExchange();
+                    break;
+                case "header":
+                    HeaderExchange();
+                    break;
+                default:
+                    Console.WriteLine("no select exchange");
+                    break;
+            }
             //DirectExchange();
             //FanoutExchange();
             //TopicExchange();
             //HeaderExchange();
+            Console.WriteLine("Press any key to exit");
+            Console.ReadKey();
         }
 
         /// <summary>
@@ -44,12 +67,16 @@ namespace Server
                 prop.DeliveryMode = 2;
                 channel.BasicPublish("", "DefaultQueue", prop, Encoding.UTF8.GetBytes("Default Queue Message"));
                 Console.WriteLine("Default Queue Message publish complete");
+                Console.ReadKey();
             }
         }
 
         private static void Channel_BasicAcks(object sender, BasicAckEventArgs e)
         {
             Console.WriteLine(sender.GetType().FullName);
+            //DeliverTag在channel中唯一，第一个发布的消息DeliveryTag为1，每发布一个消息+1;
+            Console.WriteLine(e.DeliveryTag);
+            Console.WriteLine(e.Multiple);
             Console.WriteLine("publish Complete");
         }
 

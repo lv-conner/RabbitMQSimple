@@ -48,6 +48,7 @@ namespace Client
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
+                channel.BasicQos(10, 20, false);
                 var consumer = new EventingBasicConsumer(channel);
                 consumer.Received += Consumer_Received;
                 //设置不自动发送ack，防止消费者丢失消息。
